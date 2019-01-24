@@ -1,5 +1,6 @@
-import { IModelTransaction, Transaction } from 'shared/model/transaction';
+import {IAsset, IModelTransaction, Transaction} from 'shared/model/transaction';
 import { IFunctionResponse, ITableObject } from 'core/util/common';
+import ResponseEntity from "shared/model/response";
 
 // wait declare by @Fisenko
 declare class Account {
@@ -10,7 +11,31 @@ declare class KeyPair {
 
 }
 
-export interface ITransactionService<T extends Object> {
+export interface IAssetService<T extends IAsset> {
+    create(data: any): Promise<IAsset>;
+
+    getBytes(asset: IAsset): Uint8Array;
+
+    verify(asset: IAsset, sender: Account): Promise<ResponseEntity<IAsset>>;
+
+    calculateFee(asset: IAsset, sender: Account): number;
+
+    calcUndoUnconfirmed(asset: IAsset, sender: Account): void;
+
+    applyUnconfirmed(asset: IAsset): Promise<void>;
+
+    undoUnconfirmed(asset: IAsset): Promise<void>;
+
+    apply(asset: IAsset): Promise<void>;
+
+    undo(asset: IAsset): Promise<void>;
+
+    dbRead(fullTrsObject: any): IAsset;
+
+    dbSave(asset: IAsset): Promise<void>;
+}
+
+export interface ITransactionService<T extends IAsset> {
     getAddressByPublicKey(): any; // to utils
     list(): any; // to repo
     getById(): any; // to repo
@@ -70,35 +95,6 @@ export interface ITransactionService<T extends Object> {
     dbRead(fullBlockRow: IModelTransaction<T>): Transaction<T>;
 }
 
-export class TransactionService<T extends Object> implements ITransactionService<T> {
+export class TransactionService<T extends IAsset> implements ITransactionService<T> {
 
-    async verify(trs: Transaction<T>, sender: Account): Promise<{ verified: boolean, error: Array<string> }> {
-
-        try {
-            await this.scope.transactionLogic.newVerify({ trs, sender });
-        } catch (e) {
-            this.scope.logger.debug(`[TransactionQueue][verify]: ${e}`);
-            this.scope.logger.debug(`[TransactionQueue][verify][stack]: \n ${e.stack}`);
-            return {
-                verified: false,
-                error: [e]
-            };
-        }
-
-        try {
-            await this.scope.transactionLogic.newVerifyUnconfirmed({ trs, sender });
-        } catch (e) {
-            this.scope.logger.debug(`[TransactionQueue][verifyUnconfirmed]: ${e}`);
-            this.scope.logger.debug(`[TransactionQueue][verifyUnconfirmed][stack]: \n ${e.stack}`);
-            return {
-                verified: false,
-                error: [e]
-            };
-        }
-
-        return {
-            verified: true,
-            error: []
-        };
-    }
 }
